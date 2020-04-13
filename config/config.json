@@ -2,7 +2,7 @@
   "development": {
     "username": "root",
     "password": "root",
-    "database": "todo_app",
+    "database": "sequelize_loginreg",
     "host": "127.0.0.1",
     "dialect": "mysql",
     "operatorsAliases": 0
