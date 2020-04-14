@@ -4,6 +4,7 @@ const db = require('../models');
 const {registerValidation, loginValidation} = require('../validation');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
 //GET ALL USERS
 router.get('/all', (req, res) => {
@@ -33,12 +34,30 @@ router.post('/register', async (req, res) => {
         email: req.body.email,
         password: hashedPassword
     })
-        .then(submittedUser => {
-            const token = jwt.sign({_id: user._id}, process.env.TOKEN_SECRET);
-            res.send(submittedUser);
+    .then(() => {
+        db.User.findOne({where: {email: req.body.email}})
+        .then((data) => {
+            const user = data;
+            console.log("User: " + JSON.stringify(user.id));
+            const token = jwt.sign({id: user.id}, process.env.TOKEN_SECRET, { expiresIn: '1h' });
+            res.header('auth-token', token).send(token);
         })
         .catch((err) => res.send(err))
+    })
+    .catch((err) => res.send(err))
 });
+
+//LOGIN USER
+router.post('/login', async (req, res) => {
+    const {error} = loginValidation(req.body);
+    if(error) return res.status(400).send(error.details[0].message);
+    const user = await db.User.findOne({where: {email: req.body.logEmail}});
+    if(!user) return res.status(400).send('Email does not exist');
+    const validPass = await bcrypt.compare(req.body.logPassword, user.password);
+    if(!validPass) return res.status(400).send('Invalid password');
+    const token = jwt.sign({id: user.id}, process.env.TOKEN_SECRET, { expiresIn: '1h' });
+    res.header('auth-token', token).send(token);
+})
 
 //DELETE USER
 router.delete('/delete/:id', (req, res) => {
@@ -59,4 +78,17 @@ router.put('/edit', (req, res) => {
         }
     }).then(res.send("success"));
 })
+
+function verifyToken(req, res, next){
+    const bearerHeader = req.headers['authorization'];
+    if(typeof bearerHeader !== 'undefined'){
+        const bearer = bearerHeader.split(' ');
+        const bearerToken = bearer[1];
+        req.token = bearerToken;
+        next();
+    } else {
+        res.sendStatus(403);
+    }
+}
+
 module.exports = router;
