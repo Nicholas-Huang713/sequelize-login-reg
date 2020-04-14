@@ -12,6 +12,7 @@ function App() {
   const [logErrMsg, setLogErrMsg] = useState("");
   const [logEmail, setLogEmail] = useState("");
   const [logPassword, setLogPassword] = useState("");
+  const [users, setUsers] = useState([]);
 
   const handleRegister = (e) => {
     e.preventDefault();
@@ -20,6 +21,7 @@ function App() {
       .then((res) => {
         const token = res.data;
         localStorage.setItem('token', token);
+        retrieveUser();
         console.log(res.data);
       })
       .catch((err) => {
@@ -33,9 +35,9 @@ function App() {
     const user = {logEmail, logPassword};
     axios.post('/api/login', user)
       .then((res) => {
-        // setCurrentUser(res.data);
         const token = res.data;
         localStorage.setItem('token', token);
+        retrieveUser();
         console.log(res.data);
       })
       .catch((err) => {
@@ -43,19 +45,19 @@ function App() {
         console.log(err);
       })
   }
-  // useEffect(() => {
-  //   function handleRetrieveTodos(){
+  useEffect(() => {
+    retrieveUser();
+  },[]);
 
-  //   }
-  //   axios.get('/api/all')
-  //     .then((res) => {
-  //       setTodos(res.data);
-  //     })
-  //     .catch((err) => {
-  //       console.log(err);
-  //     })
-  // });
-
+  const retrieveUser = () => {
+    axios.get('/api/all')
+      .then((res) => {
+        setUsers(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+  }
   return (
     <div>
       {
@@ -92,8 +94,14 @@ function App() {
       <br/>
 
       {
-        currentUser && 
-          <h1>{currentUser.firstname}</h1>
+        users.length > 0 &&
+        <ul>
+          {users.map((user) => {
+            return (
+              <li>{user.firstname}</li>
+            )
+          })}
+        </ul>
       }
       
     </div>
